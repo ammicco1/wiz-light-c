@@ -88,7 +88,6 @@ int main(int argc, char **argv){
                     break;
             case 54: tmp = _get_scene();
                     sprintf(buff, "{\"method\": \"setPilot\", \"params\": {\"sceneId\": %d}}", tmp);
-                    printf("%s\n", buff);
                     break;
             case 104: printf("   0: Get system configuration info.\n \
   1: Get the status of the light.\n \
@@ -219,3 +218,4 @@ static void _discover(){
 
     close(sd);
 }
+

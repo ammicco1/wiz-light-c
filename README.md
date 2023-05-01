@@ -37,7 +37,7 @@ Choose an action: (type "h" for list all)
  >
 
 #second way
-./main 192.168.2.244
+./main 192.168.0.24
 Choose an action: (type "h" for list all)
  > 
 ```
