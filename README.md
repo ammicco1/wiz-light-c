@@ -9,7 +9,7 @@ The datagram consist in a JSON object with a simple syntax, the main parameters 
 An example is: 
 
 ``` json
-"{"method": "getPilot", "params": {}}"
+{"method": "getPilot", "params": {}}
 ```
 
 that allows you to get status information from the light. Some of the possible methods and parameters is definied as macro in the main.c file.
