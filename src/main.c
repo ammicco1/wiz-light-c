@@ -22,15 +22,23 @@ typedef struct color{
     int blue;
 } color;
 
+enum state{
+    off = 0,
+    on = 1
+};
+
 static color *_get_color();
 static int _get_scene();
 static void _discover();
+static void _blink(int, struct sockaddr_in, int, int, enum state);
+static void _broadcast_blink(int);
 
 int main(int argc, char **argv){
     int sd, dst_len, choise, ret, tmp;
-    char *buff, *baddr;  
+    char *buff, *baddr, ctmp;  
     color *col;
     struct sockaddr_in dst; 
+    enum state s;
 
     if(argc < 2){
         baddr = (char *) malloc(sizeof(char) * 16);
@@ -89,13 +97,25 @@ int main(int argc, char **argv){
             case 54: tmp = _get_scene();
                     sprintf(buff, "{\"method\": \"setPilot\", \"params\": {\"sceneId\": %d}}", tmp);
                     break;
+            case 55: printf("How many times do you want your bulb blinks? "); scanf(" %d", &tmp); 
+                    printf("Is your bulb switched on? "); scanf(" %c", &ctmp); 
+                    if(ctmp == 'y'){
+                        s = on;
+                    }else{
+                        s = off;
+                    }
+                    _blink(sd, dst, dst_len, tmp, s);
+            case 56: printf("How many times do you want your bulb blinks? "); scanf(" %d", &tmp);
+                    _broadcast_blink(tmp);
             case 104: printf("   0: Get system configuration info.\n \
   1: Get the status of the light.\n \
   2: Power ON the light.\n \
   3: Power OFF the light.\n \
   4: Change light color.\n \
   5: Change brightness.\n \
-  6: Change scene.\n"); 
+  6: Change scene.\n \
+  7: Make the light blink.\n \
+  8: Make all the light blink\n"); 
                     break;
         }
 
@@ -118,6 +138,7 @@ int main(int argc, char **argv){
     }
 
     close(sd);
+    
     return 0;
 }
 
@@ -219,3 +240,56 @@ static void _discover(){
     close(sd);
 }
 
+static void _blink(int sd, struct sockaddr_in dst, int dst_len, int blink_counter, enum state s){
+    char *buff[2];
+    int i;
+    enum state curr = !s;
+
+    for(i = 0; i < 2; i++){
+        buff[i] = (char *) malloc(sizeof(char) * 51);
+
+        if(i == 0){
+            strcpy(buff[i], POWEROFF);
+        }else{
+            strcpy(buff[i], POWERON);
+        }
+    }
+    
+    for(i = 0; i < blink_counter * 2; i++){
+        sendto(sd, buff[curr], strlen(buff[curr]) + 1, 0, (struct sockaddr *) &dst, dst_len);
+
+        curr = !curr;
+
+        sleep(1);
+    } 
+}
+
+static void _broadcast_blink(int blink_counter){
+    int sd, dst_len, ret, bc = 1;
+    char baddr[16];
+    struct sockaddr_in dst; 
+
+    printf("Enter broadcast address: ");
+    scanf(" %s", baddr);
+
+    sd = socket(AF_INET, SOCK_DGRAM, 0);
+    
+    if(sd < 0){
+        exit(1);
+    }
+    
+    ret = setsockopt(sd, SOL_SOCKET, SO_BROADCAST, &bc, sizeof(bc));
+
+    if(ret < 0){
+        exit(2);
+    }
+
+    dst_len = sizeof(dst);
+    dst.sin_family = AF_INET;
+    dst.sin_addr.s_addr = inet_addr(baddr);
+    dst.sin_port = htons(38899);
+
+    _blink(sd, dst, dst_len, blink_counter, on);
+
+    close(sd);
+}
